@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interface de Chiffrement</title>
+  <!-- Bootstrap CSS -->
+</head>
+<body>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-select, .form-control, .btn {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .btn {
+      cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      text-align: center;
+    }
+    .btn-primary {
+      background-color: #007bff;
+    }
+    .btn-success {
+      background-color: #28a745;
+    }
+    .btn-warning {
+      background-color: #ffc107;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .mt-3 {
+      margin-top: 1rem;
+    }
+    .mb-3 {
+      margin-bottom: 1rem;
+    }
+    .mb-4 {
+      margin-bottom: 1.5rem;
+    }
+    .d-none {
+      display: none;
+    }
+  </style>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Interface de Chiffrement</h1>
+
+    <!-- Sélection de l'algorithme -->
+    <div class="mb-4">
+      <label for="algorithme" class="form-label">Choisir un algorithme :</label>
+      <select id="algorithme" class="form-select">
+        <option value="rsa">RSA</option>
+        <option value="merkle-hellman">Merkle-Hellman</option>
+        <option value="elgamal">ElGamal</option>
+      </select>
+    </div>
+
+    <!-- Interface RSA -->
+    <div id="rsa-interface" class="algo-interface">
+      <h2>RSA</h2>
+      <div class="mb-3">
+        <label for="rsa-message" class="form-label">Message à chiffrer :</label>
+        <input type="text" id="rsa-message" class="form-control">
+      </div>
+      <button class="btn btn-primary" onclick="chiffrerRSA()">Chiffrer</button>
+      <button class="btn btn-success" onclick="dechiffrerRSA()">Déchiffrer</button>
+      <button class="btn btn-warning" onclick="genererClesRSA()">Générer Clés</button>
+      <div class="mt-3">
+        <label for="rsa-resultat" class="form-label">Résultat :</label>
+        <textarea id="rsa-resultat" class="form-control" rows="3" readonly></textarea>
+      </div>
+    </div>
+
+    <!-- Interface Merkle-Hellman -->
+    <div id="merkle-hellman-interface" class="algo-interface d-none">
+      <h2>Merkle-Hellman</h2>
+      <div class="mb-3">
+        <label for="mh-message" class="form-label">Message à chiffrer :</label>
+        <input type="text" id="mh-message" class="form-control">
+      </div>
+      <button class="btn btn-primary" onclick="chiffrerMH()">Chiffrer</button>
+      <button class="btn btn-success" onclick="dechiffrerMH()">Déchiffrer</button>
+      <button class="btn btn-warning" onclick="genererClesMH()">Générer Clés</button>
+      <div class="mt-3">
+        <label for="mh-resultat" class="form-label">Résultat :</label>
+        <textarea id="mh-resultat" class="form-control" rows="3" readonly></textarea>
+      </div>
+    </div>
+
+    <!-- Interface ElGamal -->
+    <div id="elgamal-interface" class="algo-interface d-none">
+      <h2>ElGamal</h2>
+      <div class="mb-3">
+        <label for="elgamal-message" class="form-label">Message à chiffrer :</label>
+        <input type="text" id="elgamal-message" class="form-control">
+      </div>
+      <button class="btn btn-primary" onclick="chiffrerElGamal()">Chiffrer</button>
+      <button class="btn btn-success" onclick="dechiffrerElGamal()">Déchiffrer</button>
+      <button class="btn btn-warning" onclick="genererClesElGamal()">Générer Clés</button>
+      <div class="mt-3">
+        <label for="elgamal-resultat" class="form-label">Résultat :</label>
+        <textarea id="elgamal-resultat" class="form-control" rows="3" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Fonction pour afficher l'interface correspondante
+    document.getElementById('algorithme').addEventListener('change', function() {
+      const algo = this.value;
+      document.querySelectorAll('.algo-interface').forEach(interface => {
+        interface.classList.add('d-none');
+      });
+      document.getElementById(`${algo}-interface`).classList.remove('d-none');
+    });
+
+    // RSA Implementation
+    let clePubliqueRSA, clePriveeRSA;
+
+    // Fonction pour générer un nombre premier
+    function genererNombrePremier(min, max) {
+      while (true) {
+        const nombre = Math.floor(Math.random() * (max - min + 1)) + min;
+        if (estPremier(nombre)) return nombre;
+      }
+    }
+
+    // Fonction pour vérifier si un nombre est premier
+    function estPremier(n) {
+      if (n <= 1) return false;
+      if (n <= 3) return true;
+      if (n % 2 === 0 || n % 3 === 0) return false;
+      for (let i = 5; i * i <= n; i += 6) {
+        if (n % i === 0 || n % (i + 2) === 0) return false;
+      }
+      return true;
+    }
+
+    // Fonction pour calculer le PGCD de deux nombres
+    function pgcd(a, b) {
+      while (b !== 0) {
+        [a, b] = [b, a % b];
+      }
+      return a;
+    }
+
+    // Fonction pour calculer l'inverse modulaire
+    function inverseModulaire(e, phi) {
+      for (let d = 3; d < phi; d++) {
+        if ((d * e) % phi === 1) return d;
+      }
+      throw new Error("L'inverse modulaire n'existe pas");
+    }
+
+    // Génération des clés RSA
+    function genererClesRSA() {
+      const p = genererNombrePremier(10, 100);
+      const q = genererNombrePremier(10, 100);
+      const n = p * q;
+      const phi = (p - 1) * (q - 1);
+      let e = Math.floor(Math.random() * (phi - 2)) + 2;
+      while (pgcd(e, phi) !== 1) {
+        e = Math.floor(Math.random() * (phi - 2)) + 2;
+      }
+      const d = inverseModulaire(e, phi);
+      clePubliqueRSA = [e, n];
+      clePriveeRSA = [d, n];
+      document.getElementById('rsa-resultat').value = `Clé publique (e, n): [${clePubliqueRSA}]\nClé privée (d, n): [${clePriveeRSA}]`;
+    }
+
+    // Chiffrement RSA
+    function chiffrerRSA() {
+      const message = document.getElementById('rsa-message').value;
+      const messageChiffre = Array.from(message).map((c) => BigInt(c.charCodeAt(0)) ** BigInt(clePubliqueRSA[0]) % BigInt(clePubliqueRSA[1]));
+      document.getElementById('rsa-resultat').value = messageChiffre.join(", ");
+    }
+
+    // Déchiffrement RSA
+    function dechiffrerRSA() {
+      const messageChiffre = document.getElementById('rsa-message').value.split(", ").map(BigInt);
+      const messageDechiffre = messageChiffre.map((c) => String.fromCharCode(Number(c ** BigInt(clePriveeRSA[0]) % BigInt(clePriveeRSA[1])))).join("");
+      document.getElementById('rsa-resultat').value = messageDechiffre;
+    }
+
+    // Merkle-Hellman Implementation
+    let clePubliqueMH, clePriveeMH;
+
+    // Fonction pour générer une liste super-croissante
+    function genererListeSuperCroissante(n) {
+      const liste = [1];
+      for (let i = 1; i < n; i++) {
+        liste.push(liste.reduce((a, b) => a + b, 0) + 1);
+      }
+      return liste;
+    }
+
+    // Fonction pour transformer une liste super-croissante en liste quelconque
+    function transformerListe(liste, p, u) {
+      return liste.map((a) => (a * p) % u);
+    }
+
+    // Génération des clés Merkle-Hellman
+    function genererClesMH() {
+      const listeSuperCroissante = genererListeSuperCroissante(8); // Adjusted to 8 bits for each character
+      const u = listeSuperCroissante.reduce((a, b) => a + b, 0) + 1;
+      const p = genererNombrePremier(10, 100);
+      const listeQuelconque = transformerListe(listeSuperCroissante, p, u);
+      clePubliqueMH = listeQuelconque;
+      clePriveeMH = { listeSuperCroissante, p, u };
+      document.getElementById('mh-resultat').value = `Clé publique: [${clePubliqueMH}]\nClé privée: { listeSuperCroissante: [${clePriveeMH.listeSuperCroissante}], p: ${clePriveeMH.p}, u: ${clePriveeMH.u} }`;
+    }
+
+    // Convert a string to a binary string
+    function stringToBinary(str) {
+      return str.split('').map(char => {
+        return char.charCodeAt(0).toString(2).padStart(8, '0');
+      }).join('');
+    }
+
+    // Chiffrement Merkle-Hellman
+    function chiffrerMH() {
+      const message = document.getElementById('mh-message').value;
+      if (!message) {
+        alert("Veuillez entrer un message à chiffrer.");
+        return;
+      }
+      if (!clePubliqueMH) {
+        alert("Veuillez d'abord générer des clés.");
+        return;
+      }
+      const binaryMessage = stringToBinary(message);
+      const messageChiffre = binaryMessage.split("").reduce((sum, bit, index) => sum + (bit === "1" ? clePubliqueMH[index % clePubliqueMH.length] : 0), 0);
+      document.getElementById('mh-resultat').value = `Message chiffré : ${messageChiffre}`;
+    }
+
+    // Déchiffrement Merkle-Hellman
+    function dechiffrerMH() {
+      const messageChiffre = parseInt(document.getElementById('mh-message').value, 10);
+      if (isNaN(messageChiffre)) {
+        alert("Veuillez entrer un message chiffré valide.");
+        return;
+      }
+      if (!clePriveeMH) {
+        alert("Veuillez d'abord générer des clés.");
+        return;
+      }
+      const pInverse = inverseModulaire(clePriveeMH.p, clePriveeMH.u);
+      let s = (messageChiffre * pInverse) % clePriveeMH.u;
+      const binaryMessage = [];
+      for (let i = clePriveeMH.listeSuperCroissante.length - 1; i >= 0; i--) {
+        if (s >= clePriveeMH.listeSuperCroissante[i]) {
+          s -= clePriveeMH.listeSuperCroissante[i];
+          binaryMessage[i] = "1";
+        } else {
+          binaryMessage[i] = "0";
+        }
+      }
+      const messageDechiffre = binaryMessage.join("").match(/.{1,8}/g).map(byte => String.fromCharCode(parseInt(byte, 2))).join('');
+      document.getElementById('mh-resultat').value = `Message déchiffré : ${messageDechiffre}`;
+    }
+
+    // ElGamal Implementation
+    let clePubliqueElGamal, clePriveeElGamal;
+
+    // Génération des clés ElGamal
+    function genererClesElGamal() {
+      const p = genererNombrePremier(10, 100);
+      const g = Math.floor(Math.random() * (p - 2)) + 2;
+      const x = Math.floor(Math.random() * (p - 2)) + 2;
+      const y = Math.pow(g, x) % p;
+      clePubliqueElGamal = { p, g, y };
+      clePriveeElGamal = x;
+      document.getElementById('elgamal-resultat').value = `Clé publique: { p: ${clePubliqueElGamal.p}, g: ${clePubliqueElGamal.g}, y: ${clePubliqueElGamal.y} }\nClé privée: ${clePriveeElGamal}`;
+    }
+
+    // Chiffrement ElGamal
+    function chiffrerElGamal() {
+      const message = document.getElementById('elgamal-message').value;
+      if (!message) {
+        alert("Veuillez entrer un message à chiffrer.");
+        return;
+      }
+      if (!clePubliqueElGamal) {
+        alert("Veuillez d'abord générer des clés.");
+        return;
+      }
+      const k = Math.floor(Math.random() * (clePubliqueElGamal.p - 2)) + 2;
+      const a = Math.pow(clePubliqueElGamal.g, k) % clePubliqueElGamal.p;
+      const b = (message.charCodeAt(0) * Math.pow(clePubliqueElGamal.y, k)) % clePubliqueElGamal.p;
+      document.getElementById('elgamal-resultat').value = `(${a}, ${b})`;
+    }
+
+    // Déchiffrement ElGamal
+    function dechiffrerElGamal() {
+      const [a, b] = document.getElementById('elgamal-message').value.slice(1, -1).split(', ').map(Number);
+      if (!clePriveeElGamal) {
+        alert("Veuillez d'abord générer des clés.");
+        return;
+      }
+      const s = Math.pow(a, clePriveeElGamal) % clePubliqueElGamal.p;
+      const sInverse = inverseModulaire(s, clePubliqueElGamal.p);
+      const messageDechiffre = (b * sInverse) % clePubliqueElGamal.p;
+      document.getElementById('elgamal-resultat').value = String.fromCharCode(messageDechiffre);
+    }
+  </script>
+</body>
+</html>
