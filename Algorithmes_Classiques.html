@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interface de Chiffrement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #444;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    textarea {
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Interface de Chiffrement</h1>
+
+    <!-- Sélection de l'algorithme -->
+    <label for="algorithme">Choisir un algorithme :</label>
+    <select id="algorithme">
+      <option value="cesar">César</option>
+      <option value="vigenere">Vigenère</option>
+      <option value="vernam">Vernam</option>
+      <option value="transposition">Transposition</option>
+    </select>
+
+    <!-- Champ pour le message -->
+    <label for="message">Message :</label>
+    <input type="text" id="message" placeholder="Entrez votre message">
+
+    <!-- Champ pour la clé -->
+    <label for="cle">Clé :</label>
+    <input type="text" id="cle" placeholder="Entrez la clé">
+
+    <!-- Boutons pour chiffrer/déchiffrer -->
+    <button onclick="chiffrer()">Chiffrer</button>
+    <button onclick="dechiffrer()">Déchiffrer</button>
+
+    <!-- Zone de résultat -->
+    <label for="resultat">Résultat :</label>
+    <textarea id="resultat" rows="4" readonly></textarea>
+  </div>
+
+  <script>
+    // Algorithme de César
+    function cesar(message, cle, operation) {
+      return message.split('').map((char) => {
+        if (char.match(/[a-z]/i)) {
+          const decalage = operation === 'chiffrer' ? cle : -cle;
+          const code = char.charCodeAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : 97;
+          return String.fromCharCode(((code - base + decalage + 26) % 26) + base);
+        }
+        return char;
+      }).join('');
+    }
+
+    // Algorithme de Vigenère
+    function vigenere(message, cle, operation) {
+      let resultat = '';
+      for (let i = 0; i < message.length; i++) {
+        const char = message[i];
+        if (char.match(/[a-z]/i)) {
+          const decalage = cle[i % cle.length].toLowerCase().charCodeAt(0) - 97;
+          const code = char.charCodeAt(0);
+          const base = code >= 65 && code <= 90 ? 65 : 97;
+          const nouveauCode = operation === 'chiffrer' ?
+            ((code - base + decalage + 26) % 26) + base :
+            ((code - base - decalage + 26) % 26) + base;
+          resultat += String.fromCharCode(nouveauCode);
+        } else {
+          resultat += char;
+        }
+      }
+      return resultat;
+    }
+
+    // Algorithme de Vernam
+    function vernam(message, cle, operation) {
+      return message.split('').map((char, index) => {
+        const charCode = char.charCodeAt(0);
+        const cleCode = cle[index % cle.length].charCodeAt(0);
+        const resultatCode = operation === 'chiffrer' ? charCode ^ cleCode : charCode ^ cleCode;
+        return String.fromCharCode(resultatCode);
+      }).join('');
+    }
+
+    // Algorithme de Transposition
+    function transposition(message, cle, operation) {
+      const longueurCle = cle.length;
+      const colonnes = Array.from({ length: longueurCle }, (_, i) => i);
+      const ordreColonnes = colonnes.sort((a, b) => cle[a].localeCompare(cle[b]));
+      const lignes = Math.ceil(message.length / longueurCle);
+      let resultat = '';
+
+      if (operation === 'chiffrer') {
+        for (let i = 0; i < longueurCle; i++) {
+          const colonne = ordreColonnes[i];
+          for (let j = 0; j < lignes; j++) {
+            const index = j * longueurCle + colonne;
+            if (index < message.length) {
+              resultat += message[index];
+            }
+          }
+        }
+      } else {
+        const tableau = Array.from({ length: lignes }, () => Array(longueurCle).fill(''));
+        let index = 0;
+        for (let i = 0; i < longueurCle; i++) {
+          const colonne = ordreColonnes.indexOf(i);
+          for (let j = 0; j < lignes; j++) {
+            if (index < message.length) {
+              tableau[j][colonne] = message[index++];
+            }
+          }
+        }
+        resultat = tableau.flat().join('');
+      }
+      return resultat;
+    }
+
+    // Fonction pour chiffrer
+    function chiffrer() {
+      const algorithme = document.getElementById('algorithme').value;
+      const message = document.getElementById('message').value;
+      const cle = document.getElementById('cle').value;
+      let resultat;
+
+      switch (algorithme) {
+        case 'cesar':
+          resultat = cesar(message, parseInt(cle, 10), 'chiffrer');
+          break;
+        case 'vigenere':
+          resultat = vigenere(message, cle, 'chiffrer');
+          break;
+        case 'vernam':
+          resultat = vernam(message, cle, 'chiffrer');
+          break;
+        case 'transposition':
+          resultat = transposition(message, cle, 'chiffrer');
+          break;
+        default:
+          resultat = 'Algorithme non reconnu';
+      }
+      document.getElementById('resultat').value = resultat;
+    }
+
+    // Fonction pour déchiffrer
+    function dechiffrer() {
+      const algorithme = document.getElementById('algorithme').value;
+      const message = document.getElementById('message').value;
+      const cle = document.getElementById('cle').value;
+      let resultat;
+
+      switch (algorithme) {
+        case 'cesar':
+          resultat = cesar(message, parseInt(cle, 10), 'dechiffrer');
+          break;
+        case 'vigenere':
+          resultat = vigenere(message, cle, 'dechiffrer');
+          break;
+        case 'vernam':
+          resultat = vernam(message, cle, 'dechiffrer');
+          break;
+        case 'transposition':
+          resultat = transposition(message, cle, 'dechiffrer');
+          break;
+        default:
+          resultat = 'Algorithme non reconnu';
+      }3
+      document.getElementById('resultat').value = resultat;
+    }
+  </script>
+</body>
+</html>
